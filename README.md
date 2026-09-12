@@ -40,7 +40,7 @@
    - Budget period utilization, revenue goal progress indicators, and interactive monthly trend charts.
 
 8. **🤖 Grounded AI Intelligence Assistant**:
-   - Zero-hallucination natural language Q&A engine executing deterministic SQL queries against local MySQL database (`departmenthub_db`).
+   - Zero-hallucination natural language Q&A engine executing deterministic SQL queries against local MySQL database (`campusiq_db` / `departmenthub_db`).
    - Displays real-time grounding verification badges, confidence scores, supporting SQL data rows, and direct module navigation links.
 
 9. **📄 Verified Management Reports & PDF Generator**:
@@ -49,92 +49,167 @@
 
 ---
 
-## 1. Prerequisites
+## 👥 Contributor & Team Quickstart Guide
 
-- **Node.js**: v18.0+ or v20.x / v22.x / v24.x
-- **XAMPP / MySQL**: MySQL or MariaDB running on default port `3306`
-- **Web Browser**: Modern Chromium (Chrome / Edge) or Firefox
+Welcome to the **CampusIQ** development team! Follow these instructions to set up your local development environment after cloning the repository.
+
+### 📋 Prerequisites
+- **Node.js**: `v18.0.0+` or `v20.x` / `v22.x` (check via `node -v`)
+- **XAMPP / MySQL**: MySQL or MariaDB running on local port `3306` (start via XAMPP Control Panel)
+- **Git**: Installed and configured
 
 ---
 
-## 2. Quick Local Setup
+### 🚀 Step-by-Step Setup
 
-### Step 1: Start MySQL in XAMPP
-Open the **XAMPP Control Panel** and click **Start** next to **MySQL** (and Apache if needed).
-
-### Step 2: Configure Environment
-Copy `.env.example` to `.env` in both the project root and `backend/`:
+#### Step 1: Clone Repository
 ```bash
-# Database Configuration (Default XAMPP credentials)
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=departmenthub_db
-
-PORT=5000
-CLIENT_URL=http://localhost:5173
-JWT_SECRET=campusiq_jwt_secure_secret_key_2026
+git clone https://github.com/Waleed2412/CampusIQ.v2.git
+cd CampusIQ.v2
 ```
 
-### Step 3: Install Dependencies
-```bash
-# In backend directory:
-cd backend
-npm install
+#### Step 2: Set Up Local Environment Files (`.env`)
+The repository contains base templates (`.env.example`) with safe defaults. Copy the template to `.env` in both the project root and the `backend/` folder:
 
-# In frontend directory:
-cd ../frontend
-npm install
+**On Windows (Command Prompt):**
+```cmd
+copy .env.example .env
+copy backend\.env.example backend\.env
 ```
 
-### Step 4: Initialize and Seed MySQL Database
-Run the automated schema creation and seeding script:
+**On Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
+Copy-Item backend/.env.example backend/.env
+```
+
+**On macOS / Linux / Git Bash:**
 ```bash
-cd backend
+cp .env.example .env
+cp backend/.env.example backend/.env
+```
+
+> ⚠️ **Security Notice**: `.env` files contain local secrets and are automatically ignored by `.gitignore`. **Never commit or push `.env` files to GitHub.**
+
+---
+
+#### Step 3: Install All Dependencies
+Install backend and frontend dependencies in one command from the project root:
+```bash
+npm run install:all
+```
+*(Alternatively: `cd backend && npm install`, then `cd ../frontend && npm install`)*
+
+---
+
+#### Step 4: Initialize & Seed MySQL Database
+Ensure **MySQL is running in your XAMPP Control Panel**, then run:
+```bash
 npm run db:init
 ```
-*This command initializes `departmenthub_db`, configures all 16 relational tables with foreign keys and indexes from `database/schema.sql`, and inserts 200+ realistic Pakistani records from `database/seed.sql`.*
+
+**What this does automatically:**
+1. Connects to your local MySQL server on `localhost:3306`.
+2. Creates the database (`campusiq_db` / `departmenthub_db`) if it doesn't already exist.
+3. Applies all 16 relational tables with foreign keys and indexes from `database/schema.sql`.
+4. Seeds 200+ realistic Pakistani records (users, faculty, courses, students, budgets, assets) from `database/seed.sql`.
+
+> 💡 **Tip:** If you ever need to reset the database back to clean demo data, simply run `npm run db:seed`.
 
 ---
 
-## 3. Running the Application
+#### Step 5: Start Development Servers
+Open two terminal windows:
 
-### Option A: Start Services
-1. **Start Backend Server (Port 5000)**:
-   ```bash
-   cd backend
-   npm run dev
-   # API running at http://localhost:5000
-   # Health check: http://localhost:5000/api/health
-   # DB health:    http://localhost:5000/api/health/db
-   ```
+**Terminal 1 (Backend API Server - Port 5000):**
+```bash
+npm run dev:backend
+# API running at: http://localhost:5000
+# Health Check:    http://localhost:5000/api/health
+# DB Diagnostics:  http://localhost:5000/api/health/db
+```
 
-2. **Start Frontend Client (Port 5173)**:
-   ```bash
-   cd frontend
-   npm run dev
-   # Web app opens at http://localhost:5173
-   ```
+**Terminal 2 (Frontend Client - Port 5173):**
+```bash
+npm run dev:frontend
+# Web application will open at: http://localhost:5173
+```
 
 ---
 
-## 4. Seeded Test Accounts
+## 🔑 Demo Login Accounts
 
-All demo accounts use the standard password: **`Password123!`**
+All pre-seeded test accounts use the standard password: **`Password123!`**
 
-| Role | Email | Name | Designation & Access |
+| Role | Email | Name | Access Level |
 | :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@departmenthub.edu` | **Dr. Khurram Nadeem** | Professor & Department Chair • Full governance, financial authorization, executive report generation |
-| **Officer / Manager** | `officer@departmenthub.edu` | **Syed Muhammad Ali** | Senior Administrative Officer • Request reviewer, asset issue/return, expense recording |
-| **Faculty Member** | `faculty@departmenthub.edu` | **Dr. Ayesha Khan** | Associate Professor (AI & ML) • Request submission, course roster & workload overview, assigned assets |
-| **Staff Member** | `staff@departmenthub.edu` | **Muhammad Rizwan** | Senior Hardware Lab Coordinator • Hardware maintenance and procurement requests |
+| **Administrator** | `admin@departmenthub.edu` | **Dr. Khurram Nadeem** | Full governance, budget allocation, executive reports |
+| **Officer / Manager** | `officer@departmenthub.edu` | **Syed Muhammad Ali** | Review & approve requests, asset check-in/out, expenses |
+| **Faculty Member** | `faculty@departmenthub.edu` | **Dr. Ayesha Khan** | Submit requests, view workloads, courses, assigned assets |
+| **Staff Member** | `staff@departmenthub.edu` | **Muhammad Rizwan** | Hardware maintenance, lab requests, asset inspection |
 
-> **Tip:** You can switch between demo accounts instantly from the top-right role dropdown in the application header without having to re-login.
+> 🔄 **Instant Role Switching:** You can switch between demo accounts with 1 click using the profile menu on the top-right of the navigation bar.
 
 ---
 
-## 5. API Endpoints Overview
+## 🛠️ Available NPM Scripts
+
+Run these scripts from the repository root:
+
+| Command | Description |
+| :--- | :--- |
+| `npm run install:all` | Installs dependencies for both `backend` and `frontend` |
+| `npm run db:init` | Creates database, applies schema, and seeds all demo data |
+| `npm run db:seed` | Re-seeds database with fresh Pakistani demo records |
+| `npm run dev:backend` | Starts the Express API server in development mode (port 5000) |
+| `npm run dev:frontend` | Starts Vite React dev server with Hot Module Reload (port 5173) |
+| `npm run start:backend` | Starts the production Node.js server |
+
+---
+
+## 🛡️ Git & Contribution Guidelines
+
+1. **Keep Secrets Safe**:
+   - Never put plain-text passwords, private keys, or API tokens directly into code files.
+   - Always load sensitive configurations through `process.env`.
+   - If you introduce a new environment variable, add it with a placeholder explanation to `.env.example` and `backend/.env.example`.
+
+2. **Branching & Pull Requests**:
+   - Create a feature branch for your work: `git checkout -b feature/your-feature-name`
+   - Verify that both `npm run db:init` and `npm run dev` work cleanly before pushing.
+   - Submit a Pull Request targeting `main`.
+
+3. **Database Migrations**:
+   - If you modify table columns or add relations, update `database/schema.sql` and `database/seed.sql` so your teammates receive the updated schema when running `npm run db:init`.
+
+---
+
+## 🔧 Troubleshooting & FAQ
+
+<details>
+<summary><b>1. Error: "Failed to connect to MySQL database at localhost:3306"</b></summary>
+
+- **Cause**: MySQL service is not running or credentials in `.env` are mismatched.
+- **Fix**:
+  1. Open the **XAMPP Control Panel** and ensure the **MySQL** module is started (green indicator).
+  2. Verify that `DB_PORT=3306`, `DB_USER=root`, and `DB_PASSWORD=` match your local MySQL settings in `.env`.
+</details>
+
+<details>
+<summary><b>2. Error: "Unknown database 'campusiq_db'" or empty tables</b></summary>
+
+- **Fix**: Run `npm run db:init` from the root directory to automatically create and populate the database.
+</details>
+
+<details>
+<summary><b>3. Port 5000 or Port 5173 is already in use</b></summary>
+
+- **Fix**: Change `PORT=5001` in your `backend/.env` or specify `--port 5174` in `frontend/package.json`.
+</details>
+
+---
+
+## 📡 API Endpoints Summary
 
 | Category | Method & Path | Description | Access |
 | :--- | :--- | :--- | :--- |
@@ -166,44 +241,46 @@ All demo accounts use the standard password: **`Password123!`**
 
 ---
 
-## 6. Project Directory Structure
+## 📁 Project Directory Structure
 
 ```
-/campusiq
+/CampusIQ.v2
 ├── backend/
 │   ├── src/
-│   │   ├── controllers/      # Route controllers (academic, inventory, requests, finance, reports, ai)
+│   │   ├── controllers/      # Academic, inventory, requests, finance, reports, ai
 │   │   ├── routes/           # Express REST route definitions
-│   │   ├── services/         # Business logic, AI analysis & grounded SQL engine
-│   │   ├── middleware/       # JWT auth, RBAC role guards, error handling
-│   │   ├── db/               # MySQL connection pool & seed runners
+│   │   ├── services/         # Business logic, NLP parsing & grounded SQL engine
+│   │   ├── middleware/       # JWT authentication, RBAC role guards, error handlers
+│   │   ├── db/               # MySQL connection pool, initDb & seedDb runners
 │   │   ├── app.js            # Express app configuration & middleware
 │   │   └── server.js         # HTTP server entry point
-│   ├── package.json
-│   └── .env
+│   ├── .env.example          # Backend environment variables template
+│   └── package.json
 ├── frontend/
 │   ├── src/
 │   │   ├── components/       # Reusable UI components & SettingsModal
 │   │   ├── context/          # AuthContext & SettingsContext (Currency, Regional configs)
 │   │   ├── layouts/          # AppLayout shell (Fixed sticky sidebar, Header, Nav)
-│   │   ├── pages/            # Dashboard, Academic, Inventory, Requests, Finance, Reports, AI Assistant, Health
-│   │   ├── services/         # Axios API client
-│   │   ├── App.jsx           # Routing & global providers
-│   │   ├── main.jsx          # Entry point
+│   │   ├── pages/            # Dashboard, Academic, Inventory, Requests, Finance, Reports, AI, Health
+│   │   ├── services/         # Axios API client with timeout protection
+│   │   ├── App.jsx           # Lazy-loaded routes & global providers
+│   │   ├── main.jsx          # React DOM entry point
 │   │   └── index.css         # Design system tokens & typography
 │   ├── package.json
-│   └── vite.config.js
+│   └── vite.config.js        # Optimized vendor chunking configuration
 ├── database/
 │   ├── schema.sql            # Full MySQL schema (16 tables, constraints, indexes)
 │   └── seed.sql              # Realistic Pakistani dataset (200+ records)
 ├── docs/
 │   ├── PRD.md
 │   └── API_NOTES.md
+├── .env.example              # Root environment template
+├── .gitignore                # Production & team safe gitignore
 ├── DEVELOPMENT_STATUS.md     # Development milestone verification tracker
-└── README.md
+└── README.md                 # Complete documentation & team quickstart guide
 ```
 
 ---
 
-## 7. License & Compliance
-Built with ❤️ for advanced institutional management and academic operations.
+## 📜 License & Collaboration
+Built with ❤️ for academic institutions, higher education departments, and faculty governance.

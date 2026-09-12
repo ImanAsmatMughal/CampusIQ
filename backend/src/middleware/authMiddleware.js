@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/connection.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'departmenthub_jwt_secure_secret_key_2026_mvp';
+const JWT_SECRET = process.env.JWT_SECRET || 'campusiq_jwt_secure_secret_key_2026_mvp';
 
 /**
  * Middleware to authenticate requests using JWT Bearer token

@@ -13,16 +13,25 @@ async function request(endpoint, options = {}) {
     ...options.headers,
   };
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), options.timeout || 15000);
+
   try {
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error?.message || `HTTP error ${response.status}`);
+      throw new Error(data.message || data.error?.message || `HTTP ${response.status}`);
     }
 
     return data;
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.error(`Request to ${endpoint} timed out after 15s`);
+      throw new Error('Request timed out. Please verify your connection.');
+    }
     console.error(`API Error on ${endpoint}:`, error);
     throw error;
   }

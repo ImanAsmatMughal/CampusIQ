@@ -7,17 +7,23 @@ import dotenv from 'dotenv';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = parseInt(process.env.DB_PORT || '3306', 10);
 const dbUser = process.env.DB_USER || 'root';
-const dbPassword = process.env.DB_PASSWORD || '';
-const dbName = process.env.DB_NAME || 'departmenthub_db';
+const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '';
+const dbName = process.env.DB_NAME || 'campusiq_db';
 
 export async function seedDatabase() {
-  console.log('Re-seeding DepartmentHub database with fresh demo dataset...');
+  console.log('====================================================');
+  console.log('🌱 CampusIQ Database Re-Seeding');
+  console.log(`   Target Server : ${dbUser}@${dbHost}:${dbPort}`);
+  console.log(`   Database Name : ${dbName}`);
+  console.log('====================================================');
+
   let connection;
   try {
     connection = await mysql.createConnection({
@@ -30,12 +36,21 @@ export async function seedDatabase() {
     });
 
     const seedPath = path.resolve(__dirname, '../../../database/seed.sql');
-    const seedSql = fs.readFileSync(seedPath, 'utf8');
+    if (!fs.existsSync(seedPath)) {
+      throw new Error(`Seed SQL file not found at: ${seedPath}`);
+    }
+
+    let seedSql = fs.readFileSync(seedPath, 'utf8');
+    seedSql = seedSql.replace(/USE `?[a-zA-Z0-9_]+`?;/gi, `USE \`${dbName}\`;`);
+
     await connection.query(seedSql);
 
-    console.log('✔ Database seeded successfully!');
+    console.log('✔ CampusIQ database re-seeded successfully with fresh demo dataset!');
   } catch (error) {
     console.error('✖ Database seed failed:', error.message);
+    console.error('\nTip for teammates:');
+    console.error('  1. Ensure the database has been initialized first via "npm run db:init".');
+    console.error('  2. Verify your MySQL credentials in .env.\n');
     process.exitCode = 1;
   } finally {
     if (connection) {

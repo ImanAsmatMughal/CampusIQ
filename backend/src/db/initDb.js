@@ -7,51 +7,26 @@ import dotenv from 'dotenv';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = parseInt(process.env.DB_PORT || '3306', 10);
 const dbUser = process.env.DB_USER || 'root';
-const dbPassword = process.env.DB_PASSWORD || '';
-const dbName = process.env.DB_NAME || 'departmenthub_db';
-
-/**
- * Execute SQL file handling multi-statements safely
- */
-async function executeSqlFile(connection, filePath) {
-  const fullPath = path.resolve(filePath);
-  console.log(`Executing SQL script: ${fullPath}`);
-  const sqlContent = fs.readFileSync(fullPath, 'utf8');
-
-  // Split SQL content into statements by semicolon, ignoring comments
-  const lines = sqlContent.split('\n');
-  const cleanedLines = lines.filter(line => !line.trim().startsWith('--') && line.trim().length > 0);
-  const cleanedSql = cleanedLines.join('\n');
-
-  // Split by semicolon that is not within quotes/blocks
-  const statements = cleanedSql
-    .split(/;\s*$/m)
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-
-  for (let i = 0; i < statements.length; i++) {
-    const stmt = statements[i];
-    if (stmt) {
-      await connection.query(stmt);
-    }
-  }
-}
+const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '';
+const dbName = process.env.DB_NAME || 'campusiq_db';
 
 export async function initializeDatabase() {
-  console.log('----------------------------------------------------');
-  console.log('DepartmentHub Database Initialization');
-  console.log(`Target: ${dbUser}@${dbHost}:${dbPort} -> Database: ${dbName}`);
-  console.log('----------------------------------------------------');
+  console.log('====================================================');
+  console.log('🏛️  CampusIQ Database Initialization');
+  console.log(`   Target Server : ${dbUser}@${dbHost}:${dbPort}`);
+  console.log(`   Database Name : ${dbName}`);
+  console.log('====================================================');
 
   let connection;
   try {
-    // 1. Connect without DB name to ensure database creation
+    // 1. Connect without selecting database to guarantee creation
     connection = await mysql.createConnection({
       host: dbHost,
       port: dbPort,
@@ -62,24 +37,36 @@ export async function initializeDatabase() {
 
     console.log('[1/4] Connected to MySQL server successfully.');
 
-    // 2. Create database
+    // 2. Create and select target database
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
     await connection.query(`USE \`${dbName}\`;`);
     console.log(`[2/4] Database '${dbName}' created/verified.`);
 
-    // 3. Execute schema.sql
+    // 3. Execute schema.sql (dynamically ensuring active dbName is used)
     const schemaPath = path.resolve(__dirname, '../../../database/schema.sql');
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+    if (!fs.existsSync(schemaPath)) {
+      throw new Error(`Schema file not found at: ${schemaPath}`);
+    }
+    let schemaSql = fs.readFileSync(schemaPath, 'utf8');
+    // Replace any legacy hardcoded database references with active dbName
+    schemaSql = schemaSql.replace(/CREATE DATABASE IF NOT EXISTS `?[a-zA-Z0-9_]+`?/gi, `CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    schemaSql = schemaSql.replace(/USE `?[a-zA-Z0-9_]+`?;/gi, `USE \`${dbName}\`;`);
+
     await connection.query(schemaSql);
     console.log('[3/4] Schema tables and constraints applied from database/schema.sql');
 
     // 4. Execute seed.sql
     const seedPath = path.resolve(__dirname, '../../../database/seed.sql');
-    const seedSql = fs.readFileSync(seedPath, 'utf8');
+    if (!fs.existsSync(seedPath)) {
+      throw new Error(`Seed file not found at: ${seedPath}`);
+    }
+    let seedSql = fs.readFileSync(seedPath, 'utf8');
+    seedSql = seedSql.replace(/USE `?[a-zA-Z0-9_]+`?;/gi, `USE \`${dbName}\`;`);
+
     await connection.query(seedSql);
     console.log('[4/4] Seed dataset inserted successfully from database/seed.sql');
 
-    // Verify row counts
+    // Verify created tables
     const [tables] = await connection.query('SHOW TABLES');
     console.log('\n--- Database Summary ---');
     console.log(`Total Tables Created: ${tables.length}`);
@@ -89,9 +76,13 @@ export async function initializeDatabase() {
       console.log(` - ${tableName.padEnd(25)}: ${count} records`);
     }
 
-    console.log('\n✔ Database setup and seeding completed successfully!\n');
+    console.log('\n✔ CampusIQ database setup and seeding completed successfully!\n');
   } catch (error) {
     console.error('\n✖ Database initialization failed:', error.message);
+    console.error('\nTip for teammates:');
+    console.error('  1. Ensure XAMPP MySQL (or local MariaDB) is started.');
+    console.error('  2. Verify your .env configuration (copy .env.example to .env).');
+    console.error('  3. Check that DB_USER and DB_PASSWORD match your local MySQL credentials.\n');
     process.exitCode = 1;
   } finally {
     if (connection) {

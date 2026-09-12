@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
-import LoginPage from './pages/LoginPage';
 import AppLayout from './layouts/AppLayout';
-import HealthDashboard from './components/HealthDashboard';
-import DashboardPage from './pages/DashboardPage';
-import AcademicPage from './pages/AcademicPage';
-import InventoryPage from './pages/InventoryPage';
-import RequestsPage from './pages/RequestsPage';
-import FinancePage from './pages/FinancePage';
-import ReportsPage from './pages/ReportsPage';
-import AiAssistantPage from './pages/AiAssistantPage';
 import SettingsModal from './components/SettingsModal';
+
+// Code-split page modules for instantaneous initial load time
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const AcademicPage = lazy(() => import('./pages/AcademicPage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+const RequestsPage = lazy(() => import('./pages/RequestsPage'));
+const FinancePage = lazy(() => import('./pages/FinancePage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const AiAssistantPage = lazy(() => import('./pages/AiAssistantPage'));
+const HealthDashboard = lazy(() => import('./components/HealthDashboard'));
+
+function PageLoadingFallback() {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '60vh',
+      gap: '0.85rem'
+    }}>
+      <div className="pulse-dot" style={{ width: '18px', height: '18px', color: 'var(--primary)' }}></div>
+      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Loading module...</span>
+    </div>
+  );
+}
 
 function AuthenticatedApp() {
   const { isAuthenticated, loading } = useAuth();
@@ -36,7 +54,11 @@ function AuthenticatedApp() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <LoginPage />
+      </Suspense>
+    );
   }
 
   const renderCurrentView = () => {
@@ -65,7 +87,9 @@ function AuthenticatedApp() {
   return (
     <>
       <AppLayout currentView={currentView} onNavigate={setCurrentView}>
-        {renderCurrentView()}
+        <Suspense fallback={<PageLoadingFallback />}>
+          {renderCurrentView()}
+        </Suspense>
       </AppLayout>
       <SettingsModal />
     </>
@@ -81,4 +105,3 @@ export default function App() {
     </SettingsProvider>
   );
 }
-
