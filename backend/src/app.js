@@ -49,10 +49,13 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Root route so platform health probes get a 200
-app.get('/', (req, res) => {
-  res.json({ service: 'CampusIQ API', status: 'ok', docs: '/api/health' });
-});
+// Root route so platform health probes get a 200.
+// Skipped when SERVE_CLIENT is on, so that '/' serves the React app instead.
+if (process.env.SERVE_CLIENT !== 'true') {
+  app.get('/', (req, res) => {
+    res.json({ service: 'CampusIQ API', status: 'ok', docs: '/api/health' });
+  });
+}
 
 // API Routes
 app.use('/api/health', healthRoutes);

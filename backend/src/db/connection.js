@@ -15,6 +15,15 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const sslOptions = buildSslOptions();
 
+// On serverless platforms (Vercel) every warm instance holds its own pool, so a
+// large pool multiplied by many instances can exhaust the database's connection
+// cap. Aiven's free MySQL allows relatively few connections — keep this small
+// in production and leave it roomy for local XAMPP.
+const poolLimit = parseInt(
+  process.env.DB_POOL_LIMIT || (process.env.VERCEL ? '3' : '20'),
+  10
+);
+
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306', 10),
@@ -22,8 +31,8 @@ const dbConfig = {
   password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '',
   database: process.env.DB_NAME || 'campusiq_db',
   waitForConnections: true,
-  connectionLimit: 20,
-  maxIdle: 10,
+  connectionLimit: poolLimit,
+  maxIdle: poolLimit,
   idleTimeout: 30000,
   connectTimeout: 10000,
   queueLimit: 0,

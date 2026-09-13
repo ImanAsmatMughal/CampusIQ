@@ -51,7 +51,11 @@ export async function initializeDatabase() {
     // 3. Execute schema.sql (dynamically ensuring active dbName is used)
     const schemaPath = path.resolve(__dirname, '../../../database/schema.sql');
     if (!fs.existsSync(schemaPath)) {
-      throw new Error(`Schema file not found at: ${schemaPath}`);
+      throw new Error(
+        `Schema file not found at: ${schemaPath}. ` +
+        'On Vercel the database/ folder sits outside the deployed root directory, so ' +
+        'these endpoints cannot seed. Run "npm run db:init" from your own machine instead.'
+      );
     }
     let schemaSql = fs.readFileSync(schemaPath, 'utf8');
     // Replace any legacy hardcoded database references with active dbName

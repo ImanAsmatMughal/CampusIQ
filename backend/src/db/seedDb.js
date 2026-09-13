@@ -40,7 +40,11 @@ export async function seedDatabase() {
 
     const seedPath = path.resolve(__dirname, '../../../database/seed.sql');
     if (!fs.existsSync(seedPath)) {
-      throw new Error(`Seed SQL file not found at: ${seedPath}`);
+      throw new Error(
+        `Seed SQL file not found at: ${seedPath}. ` +
+        'On Vercel the database/ folder sits outside the deployed root directory, so ' +
+        'these endpoints cannot seed. Run "npm run db:seed" from your own machine instead.'
+      );
     }
 
     let seedSql = fs.readFileSync(seedPath, 'utf8');
