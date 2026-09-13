@@ -1,0 +1,53 @@
+# Render Blueprint — deploys CampusIQ as a single web service that serves
+# both the Express API (/api/*) and the built React app (everything else).
+#
+# Values marked "sync: false" are NOT stored in git — Render prompts you for
+# them when you create the Blueprint, or you set them in the dashboard under
+# Environment.
+services:
+  - type: web
+    name: campusiq
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm run render-build
+    startCommand: node backend/src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Serve frontend/dist from this same service, so API and UI share one URL
+      - key: SERVE_CLIENT
+        value: "true"
+      # Same-origin API calls — baked into the React bundle at build time
+      - key: VITE_API_URL
+        value: /api
+      # --- Aiven MySQL connection (fill these in) ---
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      # Paste the Aiven CA certificate here so TLS is actually verified
+      - key: DB_SSL_CA
+        sync: false
+      # Aiven pre-creates the database, so don't try to CREATE DATABASE
+      - key: DB_SKIP_CREATE
+        value: "true"
+      # --- App secrets ---
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # One-time secret that unlocks POST /api/admin/migrate. Remove after seeding.
+      - key: MIGRATION_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false

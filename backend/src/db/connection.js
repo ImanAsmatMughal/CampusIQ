@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { buildSslOptions } from './sslConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +10,10 @@ const __dirname = path.dirname(__filename);
 // Load environment variables from backend/.env or root .env
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+
+
+const sslOptions = buildSslOptions();
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -24,7 +29,8 @@ const dbConfig = {
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-  charset: 'utf8mb4'
+  charset: 'utf8mb4',
+  ...sslOptions
 };
 
 export const pool = mysql.createPool(dbConfig);

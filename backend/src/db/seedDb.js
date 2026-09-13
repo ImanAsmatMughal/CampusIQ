@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { buildSslOptions } from './sslConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,7 @@ const dbPort = parseInt(process.env.DB_PORT || '3306', 10);
 const dbUser = process.env.DB_USER || 'root';
 const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '';
 const dbName = process.env.DB_NAME || 'campusiq_db';
+const sslOptions = buildSslOptions();
 
 export async function seedDatabase() {
   console.log('====================================================');
@@ -32,7 +34,8 @@ export async function seedDatabase() {
       user: dbUser,
       password: dbPassword,
       database: dbName,
-      multipleStatements: true
+      multipleStatements: true,
+      ...sslOptions
     });
 
     const seedPath = path.resolve(__dirname, '../../../database/seed.sql');
@@ -46,12 +49,13 @@ export async function seedDatabase() {
     await connection.query(seedSql);
 
     console.log('✔ CampusIQ database re-seeded successfully with fresh demo dataset!');
+    return { success: true };
   } catch (error) {
     console.error('✖ Database seed failed:', error.message);
     console.error('\nTip for teammates:');
     console.error('  1. Ensure the database has been initialized first via "npm run db:init".');
     console.error('  2. Verify your MySQL credentials in .env.\n');
-    process.exitCode = 1;
+    return { success: false, error: error.message };
   } finally {
     if (connection) {
       await connection.end();
@@ -60,5 +64,7 @@ export async function seedDatabase() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  seedDatabase();
+  seedDatabase().then((result) => {
+    if (!result || !result.success) process.exitCode = 1;
+  });
 }

@@ -11,6 +11,8 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const PORT = process.env.PORT || 5000;
+// Cloud hosts require binding to all interfaces, not just loopback
+const HOST = process.env.HOST || '0.0.0.0';
 
 async function startServer() {
   try {
@@ -24,7 +26,7 @@ async function startServer() {
       console.warn('  Ensure XAMPP MySQL is started and database has been initialized with "npm run db:init".');
     }
 
-    app.listen(PORT, () => {
+    app.listen(PORT, HOST, () => {
       console.log(`====================================================`);
       console.log(`🚀 CampusIQ Backend API Server running on port ${PORT}`);
       console.log(`   Health Check: http://localhost:${PORT}/api/health`);

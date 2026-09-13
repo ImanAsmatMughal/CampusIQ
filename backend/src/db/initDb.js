@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { buildSslOptions } from './sslConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,8 @@ const dbPort = parseInt(process.env.DB_PORT || '3306', 10);
 const dbUser = process.env.DB_USER || 'root';
 const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '';
 const dbName = process.env.DB_NAME || 'campusiq_db';
+const sslOptions = buildSslOptions();
+const skipCreate = String(process.env.DB_SKIP_CREATE || '').toLowerCase() === 'true';
 
 export async function initializeDatabase() {
   console.log('====================================================');
@@ -32,13 +35,16 @@ export async function initializeDatabase() {
       port: dbPort,
       user: dbUser,
       password: dbPassword,
-      multipleStatements: true
+      multipleStatements: true,
+      ...sslOptions
     });
 
     console.log('[1/4] Connected to MySQL server successfully.');
 
     // 2. Create and select target database
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
+    if (!skipCreate) {
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
+    }
     await connection.query(`USE \`${dbName}\`;`);
     console.log(`[2/4] Database '${dbName}' created/verified.`);
 
@@ -49,7 +55,7 @@ export async function initializeDatabase() {
     }
     let schemaSql = fs.readFileSync(schemaPath, 'utf8');
     // Replace any legacy hardcoded database references with active dbName
-    schemaSql = schemaSql.replace(/CREATE DATABASE IF NOT EXISTS `?[a-zA-Z0-9_]+`?/gi, `CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    schemaSql = schemaSql.replace(/CREATE DATABASE IF NOT EXISTS `?[a-zA-Z0-9_]+`?[\s\S]*?;/i, skipCreate ? '' : `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
     schemaSql = schemaSql.replace(/USE `?[a-zA-Z0-9_]+`?;/gi, `USE \`${dbName}\`;`);
 
     await connection.query(schemaSql);
@@ -77,13 +83,14 @@ export async function initializeDatabase() {
     }
 
     console.log('\n✔ CampusIQ database setup and seeding completed successfully!\n');
+    return { success: true, tables: tables.length };
   } catch (error) {
     console.error('\n✖ Database initialization failed:', error.message);
     console.error('\nTip for teammates:');
     console.error('  1. Ensure XAMPP MySQL (or local MariaDB) is started.');
     console.error('  2. Verify your .env configuration (copy .env.example to .env).');
     console.error('  3. Check that DB_USER and DB_PASSWORD match your local MySQL credentials.\n');
-    process.exitCode = 1;
+    return { success: false, error: error.message };
   } finally {
     if (connection) {
       await connection.end();
@@ -93,5 +100,7 @@ export async function initializeDatabase() {
 
 // Run directly if invoked from CLI
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  initializeDatabase();
+  initializeDatabase().then((result) => {
+    if (!result || !result.success) process.exitCode = 1;
+  });
 }
