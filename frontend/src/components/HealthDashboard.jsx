@@ -79,7 +79,7 @@ export default function HealthDashboard() {
               Foundation & Services Online
             </span>
             <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-              XAMPP MySQL • Node.js Express • Vite React
+              Cloud MySQL • Node.js Express • Vite React
             </span>
           </div>
           <h1 style={{ fontSize: '1.85rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
@@ -126,7 +126,7 @@ export default function HealthDashboard() {
             <h4 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Connection Failed</h4>
             <p style={{ fontSize: '0.875rem' }}>{error}</p>
             <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: '#b91c1c' }}>
-              Ensure your backend server is running on port 5000 (<code style={{ fontFamily: 'var(--font-mono)' }}>npm run dev:backend</code>) and XAMPP MySQL is started.
+              Check that the API service is reachable and the database credentials are set correctly.
             </p>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function HealthDashboard() {
           <div className="card-header">
             <div className="card-title">
               <Database size={20} className="text-indigo-600" />
-              <span>MySQL Database (XAMPP)</span>
+              <span>MySQL Database</span>
             </div>
             {dbHealth?.database?.connected ? (
               <span className="badge badge-success">
@@ -192,7 +192,7 @@ export default function HealthDashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem', fontSize: '0.875rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>Database Name:</span>
               <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>
-                {dbHealth?.database?.name || 'departmenthub_db'}
+                {dbHealth?.database?.name || 'campusiq'}
               </strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem', fontSize: '0.875rem' }}>

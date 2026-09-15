@@ -167,7 +167,7 @@ export default function LoginPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.8rem', marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
             <Sparkles size={14} className="text-blue-400" />
-            <span>Connected to XAMPP MySQL (departmenthub_db)</span>
+            <span>Cloud MySQL • Node.js Express • React</span>
           </div>
         </div>
 

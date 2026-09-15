@@ -33,7 +33,7 @@ export default function AiAssistantPage({ onNavigate }) {
       answer: `Hello! I am **CampusIQ Intelligence**, your grounded AI management assistant. Ask me any natural-language question about course capacity, faculty workloads, financial balances, hardware inventory, or approval backlogs. Every response is strictly computed against live MySQL database records with zero hallucination.`,
       metrics: [
         { label: 'Grounding Mode', value: 'Live SQL', color: 'emerald' },
-        { label: 'Database', value: 'departmenthub_db', color: 'blue' },
+        { label: 'Database', value: 'Cloud MySQL', color: 'blue' },
         { label: 'Hallucination Rate', value: '0.0%', color: 'purple' }
       ]
     }
