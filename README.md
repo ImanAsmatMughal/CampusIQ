@@ -578,156 +578,103 @@ find it with `netstat -ano | findstr :3306`.
 
 ## Design decisions
 
-**The assistant queries, it does not generate.** The obvious way to build a question and
-answer feature is to hand the question and some context to a language model and print what
-comes back. We did not do that, because a department system that confidently reports a wrong
-budget figure is worse than no feature at all. Instead a question is mapped to a
-deterministic SQL query, the query runs, and the answer is assembled from the returned rows,
-which are displayed alongside it. The user can check every claim against the data it came
-from.
+**The assistant queries, it does not generate.** A question is mapped to a deterministic SQL
+query, and the answer is built from the rows it returns, which are shown alongside it.
+Handing the question to a language model would have been easier, but a department system
+that confidently reports a wrong budget figure is worse than no feature at all.
 
-**Cross module writes are transactional.** Approving a purchase touches three tables in
-different modules. Doing that as three separate statements would eventually leave an
-approved request with no matching expense, or an asset that nothing paid for. Those writes
-run inside a database transaction and roll back together. The same applies to enrollment,
-which would otherwise let two students take the last seat in a course.
+**Cross module writes are transactional.** Approving a purchase touches three tables in three
+modules. Those writes run in one transaction and roll back together, so there is never an
+approved request without its expense, or an asset that nothing paid for. Enrollment works the
+same way, so two students cannot claim the last seat.
 
-**Money is DECIMAL, never float.** Floating point arithmetic accumulates small errors. On a
-budget page that is not acceptable, so all currency columns are DECIMAL(12,2).
+**Money is DECIMAL, never float.** Floating point error is not acceptable on a budget page.
+All currency columns are DECIMAL(12,2).
 
-**Roles are enforced on the server.** Hiding a button is a user experience decision, not a
-security control. Every protected route checks the caller's role in middleware before the
-handler runs.
+**Roles are enforced on the server.** Hiding a button is a user experience choice, not a
+security control. Every protected route checks the caller's role in middleware.
 
-**Configuration comes from the environment.** No hostname, port, credential or origin is
-hardcoded. This is the decision that made deployment possible later without touching feature
-code, and it is worth making early even when everything is still running locally.
+**Nothing is hardcoded.** Hostnames, ports, credentials and origins come from the
+environment. This is what made deployment possible later without touching feature code.
 
 ## Challenges we ran into
 
-Being honest about these is more useful than pretending the build was smooth.
+**Local assumptions leak everywhere.** Building against XAMPP left `localhost` fallbacks,
+"Connected to XAMPP MySQL" labels and XAMPP specific error messages throughout the app. None
+of it breaks anything locally, so none of it surfaced until a stranger could read it.
 
-**Local assumptions leak everywhere.** The application was built against XAMPP, and that
-assumption ended up in places we did not expect: labels in the interface that said "Connected
-to XAMPP MySQL", fallback values pointing at `localhost`, and error messages telling the user
-to open the XAMPP control panel. None of these break anything locally, so none of them
-surfaced until the application was deployed and a stranger could read them.
+**Windows to Linux is not automatic.** The root `package.json` called `npm.cmd`, which fails
+on every build server. Path casing is the other trap: Windows ignores it, Linux does not.
 
-**Windows to Linux is not automatic.** The root `package.json` called `npm.cmd`, which works
-on Windows and fails on every build server. File path casing is another trap: Windows does not
-care, Linux does, so an import that works locally can fail in the cloud.
+**Build time and run time variables behave differently.** `VITE_API_URL` is compiled into the
+bundle at build time, so changing it in a dashboard does nothing until a rebuild. `DB_HOST`
+is read at run time. Confusing the two cost real time.
 
-**Build time and run time environment variables behave differently.** `VITE_API_URL` is
-compiled into the JavaScript bundle when the frontend is built. Changing it in a hosting
-dashboard does nothing until a new build runs. Backend variables such as `DB_HOST` are read
-at run time and behave as expected. Conflating the two cost real time.
+**Connection pooling assumes a long lived server.** A pool of 20 suits one process. On
+serverless, every warm instance holds its own pool and a small database plan runs out of
+connections, so the size had to become configurable.
 
-**Connection pooling assumes a long lived server.** A pool of 20 connections is sensible for
-one always running process. On a serverless platform, every warm instance keeps its own pool,
-and a managed database on a small plan will run out of connections. The pool size had to
-become configurable and much smaller in that environment.
+**Same origin is simpler than correct CORS.** Two domains means an allowlist, a redeploy
+whenever a URL changes, and failures that surface as a generic "Failed to fetch". Serving
+both from one domain removed the whole class of problem.
 
-**Same origin is simpler than correct CORS.** Running the frontend and API on separate domains
-means maintaining an origin allowlist, redeploying whenever a URL changes, and debugging
-failures that surface as a generic "Failed to fetch" with the real cause only in the browser
-console. Serving both from one domain removed that entire class of problem.
-
-**Managed databases require TLS, and certificates are awkward.** Cloud MySQL providers refuse
-plaintext connections and present certificates signed by their own authority, which Node does
-not trust by default. This needed explicit TLS configuration with an option to supply the
-provider's certificate.
-
-**dotenv does not overwrite what is already set.** With a `.env` in both the project root and
-`backend/`, whichever loads first wins. Updating the root file while `backend/.env` still held
-the old values produced a connection attempt to the wrong server with no obvious explanation.
-
-**Free tier infrastructure sleeps.** A managed database on a free plan powers itself off after
-a period of inactivity, and when it does, its DNS record disappears. The resulting error looks
-like a configuration mistake rather than a stopped service, which sends you looking in exactly
-the wrong place.
-
-**There is no shell on serverless platforms.** The seeding script assumes a terminal with
-database access. Some platforms give you neither, so the schema and data have to be loadable
-another way, either from a developer machine or through a protected endpoint.
+**Free tier infrastructure sleeps.** A free managed database powers off when idle, and its
+DNS record disappears with it. The error then looks like a configuration mistake rather than
+a stopped service.
 
 ## What we learned
 
-**Deployment is a design constraint, not a final step.** Almost every problem above existed
-from the first day and stayed invisible because everything ran on one machine. Deploying
-earlier, even to a throwaway environment, would have surfaced them while they were cheap to
-fix.
+**Deployment is a design constraint, not a final step.** Nearly every problem above existed
+from day one and stayed invisible because everything ran on one machine.
 
-**An error message is a piece of user interface.** "Failed to fetch" and "Unexpected token in
-JSON" are technically accurate and practically useless. The errors that saved the most time
-were the ones that named the actual host being contacted and the actual database being used.
+**An error message is user interface.** "Failed to fetch" is accurate and useless. The errors
+that saved time were the ones naming the actual host and database being used.
 
-**Read the value, do not assume it.** More than one hour went to an environment variable that
-looked right but pointed at the wrong host, and to a hostname that was correct but belonged to
-a stopped server. Checking what a system actually resolves, rather than what it should
-resolve, is faster than reasoning about it.
+**Check what a system resolves, not what it should resolve.** An hour went to a variable that
+looked correct but pointed at the wrong host, and to a hostname that was correct but belonged
+to a stopped server.
 
-**Constraints in the database outlive constraints in code.** Application rules get bypassed by
-the next script someone writes. Foreign keys, enumerated states and DECIMAL columns do not.
-
-**Features that connect modules are worth more than features that sit inside one.** The
-approval flow that writes an expense and an asset in one transaction is the part of this
-system that a department would actually notice, and it is a small amount of code.
+**Constraints in the database outlive constraints in code.** Application rules get bypassed
+by the next script someone writes. Foreign keys and DECIMAL columns do not.
 
 ## Known limitations
 
-Stated plainly so nobody discovers them the hard way.
-
-- **No automated tests.** There is no unit, integration or end to end suite. Verification has
-  been manual.
-- **No pagination.** List endpoints return every matching row. Fine at demo scale, a problem
-  at a few thousand students.
-- **No input validation library.** Request bodies are checked ad hoc in the controllers rather
-  than against a schema.
+- **No automated tests.** Verification has been manual.
+- **No pagination.** List endpoints return every matching row. Fine at demo scale, not at a
+  few thousand students.
+- **No input validation library.** Request bodies are checked ad hoc in the controllers.
 - **No rate limiting.** The login endpoint in particular can be hammered.
 - **The schema is not migration safe.** `schema.sql` drops all 16 tables before recreating
-  them, so it cannot be applied to a database with data you want to keep.
-- **Reports print rather than export.** Report output opens the browser print dialog. There is
-  no server generated PDF file.
-- **No user management.** Accounts come only from the seed data. There is no registration,
-  password reset, or interface for creating users.
-- **Single department.** The data model has a departments table, but the application assumes
-  one department throughout.
+  them, so it cannot be applied to a database holding data you want to keep.
+- **Reports print rather than export.** Output opens the browser print dialog. There is no
+  server generated PDF.
+- **No user management.** Accounts come only from seed data. No registration, password reset
+  or admin interface.
+- **Single department.** The table exists, but the application assumes one throughout.
 - **English only.** No localisation, despite the Pakistani context.
 
 ## Future work
 
-Roughly in the order we would tackle it.
+**Correctness first**
 
-**Correctness and confidence first**
-
-1. A test suite, starting with the transactional paths, where a silent failure does real
-   damage.
+1. A test suite, starting with the transactional paths where silent failure does real damage.
 2. Schema validation on request bodies, with consistent error responses.
-3. Incremental migrations replacing the drop and recreate schema file, so the database can
-   evolve without losing data.
+3. Incremental migrations replacing the drop and recreate schema file.
 
-**Making it usable at real scale**
+**Usable at real scale**
 
-4. Pagination and server side sorting on every list endpoint.
+4. Pagination and server side sorting on list endpoints.
 5. Caching for dashboard aggregations, which currently recompute on every load.
 6. Rate limiting and account lockout on authentication.
 
-**Features a department would ask for next**
+**What a department would ask for next**
 
 7. User management: creating accounts, resetting passwords, deactivating leavers.
 8. File attachments on requests, for quotations and invoices.
-9. Email notification when a request changes state, so people stop asking in person.
-10. A single audit log across all modules, not only requests.
-11. Multi department support, using the table that already exists.
-
-**Further out**
-
-12. Server generated PDF export instead of the browser print dialog.
-13. Urdu localisation and a proper accessibility pass.
-14. Structured logging and error tracking, so production problems are diagnosable without a
-    screenshot.
-15. Continuous integration running the test suite and a Linux build on every pull request,
-    which would have caught several of the problems listed above.
+9. Email notification when a request changes state.
+10. Multi department support, using the table that already exists.
+11. Continuous integration running tests and a Linux build on every pull request, which would
+    have caught several of the problems above.
 
 ## Contributing
 
