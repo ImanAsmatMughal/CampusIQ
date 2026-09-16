@@ -35,12 +35,20 @@ services:
         sync: false
       - key: DB_SSL
         value: "true"
-      # Paste the Aiven CA certificate here so TLS is actually verified
+      # Optional. Paste the Aiven CA certificate to verify TLS properly.
+      # Leave it unset and DB_SSL_REJECT_UNAUTHORIZED=false takes over.
       - key: DB_SSL_CA
         sync: false
       # Aiven pre-creates the database, so don't try to CREATE DATABASE
       - key: DB_SKIP_CREATE
         value: "true"
+      # Aiven's free MySQL caps total connections. The default pool of 20 can
+      # exhaust it on its own, so keep this small.
+      - key: DB_POOL_LIMIT
+        value: "5"
+      # Only read when DB_SSL_CA is left empty. Matches the local .env setup.
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: "false"
       # --- App secrets ---
       - key: JWT_SECRET
         generateValue: true

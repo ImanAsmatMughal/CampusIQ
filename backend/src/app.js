@@ -24,8 +24,14 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: process.env.SERVE_CLIENT === 'true' ? false : undefined }));
 // CLIENT_URL accepts a comma-separated allowlist so local dev, the deployed
 // frontend and preview deployments can all talk to this API.
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173,http://127.0.0.1:5173')
-  .split(',')
+// RENDER_EXTERNAL_URL is injected by Render and holds this service's own public
+// URL. On a single-URL deploy (SERVE_CLIENT=true) the browser still attaches an
+// Origin header to same-origin POSTs, so the service has to allow itself or
+// every login is rejected by CORS.
+const allowedOrigins = [
+  ...(process.env.CLIENT_URL || 'http://localhost:5173,http://127.0.0.1:5173').split(','),
+  process.env.RENDER_EXTERNAL_URL || ''
+]
   .map((o) => o.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
