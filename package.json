@@ -15,5 +15,8 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "backend": "^0.0.0"
   }
 }
